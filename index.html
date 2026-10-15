@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>سجل المختبر</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f1f5f3;--card:#fff;--tx:#12231f;--mut:#61736d;--bd:#dde7e3;--board:#14463b;--chalk:#f2c94c;--ok:#15803d;--warn:#b7791f;--bad:#c62828;--info:#1d5fbf}
+@media (prefers-color-scheme:dark){:root{--bg:#0c1714;--card:#14241f;--tx:#e6f0ec;--mut:#8ea69e;--bd:#25382f;--board:#1d6150;--ok:#4ade80;--warn:#fbbf24;--bad:#f87171;--info:#7db4ff;color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:Tajawal,"Segoe UI",Tahoma,sans-serif;line-height:1.55;padding-bottom:84px}
+header.top{background:var(--board);color:#fff;padding:16px;border-bottom:4px solid var(--chalk);display:flex;justify-content:space-between;align-items:center}
+header.top h1{margin:0;font-size:21px;font-weight:800}
+header.top button{background:transparent;border:1px solid #ffffff66;color:#fff;border-radius:8px;padding:4px 12px;font:inherit}
+main{padding:14px;max-width:760px;margin:0 auto}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:14px;margin-bottom:12px}
+h2{font-size:18px;margin:2px 0 10px}h3{font-size:15px;margin:14px 0 8px;color:var(--mut)}
+button,input,select,textarea{font:inherit;color:inherit}button{cursor:pointer}
+label{display:block;font-size:14px;color:var(--mut);margin-top:8px}
+input,select,textarea{width:100%;background:var(--bg);border:1px solid var(--bd);border-radius:10px;padding:10px;margin:4px 0}
+textarea{min-height:76px;resize:vertical}
+.btn{background:var(--board);color:#fff;border:0;border-radius:10px;padding:10px 16px;font-weight:700;margin-top:6px}
+.btn.alt{background:transparent;color:var(--tx);border:1px solid var(--bd)}.btn.bad{background:var(--bad)}.btn.sm{padding:6px 12px;font-size:14px}
+.row{display:flex;gap:8px;align-items:center}.row>input{flex:1}.row>.btn{margin-top:0}
+.mut{color:var(--mut);font-size:14px}
+.item{display:flex;justify-content:space-between;width:100%;text-align:right;background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:14px;margin-bottom:8px;font-weight:700}
+.srow{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:10px 12px;margin-bottom:8px}
+.nm{display:flex;gap:10px;align-items:baseline;margin-bottom:8px;cursor:pointer}.nm b{flex:1;font-size:16px}
+.score{font-weight:800}
+.seg{display:flex;gap:6px}
+.seg button{flex:1;padding:9px 2px;border:1px solid var(--bd);background:var(--bg);border-radius:10px;font-weight:700}
+.seg button.on{color:#fff;border-color:transparent;background:var(--ok)}
+.seg button.on.ka{background:var(--bad)}.seg button.on.kl{background:var(--warn)}.seg button.on.ke{background:var(--info)}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.stat{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:12px 6px;text-align:center}
+.stat b{display:block;font-size:30px;line-height:1.1}.stat span{font-size:13px;color:var(--mut)}
+.ev{border-inline-start:5px solid var(--bad);background:var(--card);border:1px solid var(--bd);border-inline-start:5px solid var(--bad);border-radius:10px;padding:10px 12px;margin-bottom:8px}
+.ev.a{border-inline-start-color:var(--ok)}
+.ev .h{display:flex;justify-content:space-between;font-weight:700}
+.ev .x{background:none;border:0;color:var(--mut);padding:2px 0}
+nav.bar{position:fixed;bottom:0;inset-inline:0;background:var(--card);border-top:1px solid var(--bd);display:flex;padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px));z-index:5}
+nav.bar button{flex:1;background:transparent;border:0;padding:8px 2px;font-weight:700;color:var(--mut);border-radius:10px}
+nav.bar button.on{color:var(--board);background:color-mix(in srgb,var(--chalk) 35%,transparent)}
+@media (prefers-color-scheme:dark){nav.bar button.on{color:var(--chalk)}}
+#ov{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:flex-end;justify-content:center;z-index:9}
+#ov.show{display:flex}
+#sheet{background:var(--bg);width:100%;max-width:640px;max-height:90vh;overflow:auto;border-radius:18px 18px 0 0;padding:16px 14px calc(18px + env(safe-area-inset-bottom,0px))}
+#toast{position:fixed;top:12px;inset-inline:12px;margin:auto;max-width:420px;background:var(--tx);color:var(--bg);padding:10px 14px;border-radius:10px;text-align:center;font-weight:700;z-index:20;display:none}
+footer{text-align:center;color:var(--mut);font-size:13px;padding:6px 14px}
+.pr{display:none}
+@media print{header.top,nav.bar,.np,#ov,footer{display:none!important}body{background:#fff;color:#000;padding:0}.card,.stat,.ev{border-color:#bbb;break-inside:avoid}.pr{display:block}}
+</style>
+</head>
+<body>
+<header class="top np"><h1>سجل المختبر</h1><button onclick="refresh()">تحديث ↻</button></header>
+<main id="app"></main>
+<footer>لا تنسونا من صالح دعائكم</footer>
+<nav class="bar np" id="nav"></nav>
+<div id="ov"><div id="sheet"></div></div>
+<div id="toast"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.js"></script>
+<script>
+/* ===== الإعداد: ألصق رابط مشروعك والمفتاح العام (anon) من Supabase → Project Settings → API ===== */
+const SB_URL='https://mlbtrpwpmeymeykunrgh.supabase.co';
+const SB_KEY='sb_publishable_rpgeoggDzHaUdK0nl3fJAQ_zO3gABFD';
+/* ================================================================================================= */
+const $=s=>document.querySelector(s),app=$('#app');
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pad=n=>String(n).padStart(2,'0');
+const ymd=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+const DN=['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
+const dn=d=>d?DN[new Date(d+'T00:00:00').getDay()]:'';
+const VP=[['تأخر عن الحصة',2],['كلام وإزعاج بلا إذن',3],['نسيان الأدوات',2],['عدم أداء الواجب',3],['عدم احترام المعلم أو الزملاء',8],['اعتداء على زميل',15],['إتلاف ممتلكات المختبر',10],['أخرى',0]];
+const AP=[['مشاركة مميزة',2],['حل على السبورة',3],['مساعدة زميل',3],['التزام وانضباط',2],['تفوق في اختبار',5],['أخرى',0]];
+let db,U,D={classes:[],students:[],att:[],recs:[],plans:{}},V={tab:'plan',cid:null,sid:null,date:ymd(new Date())},ASK=null;
+const cls=id=>D.classes.find(c=>c.id===id);
+const stu=id=>D.students.find(s=>s.id===id);
+const beh=id=>Math.max(0,100-D.recs.filter(r=>r.student_id===id&&r.kind==='v').reduce((a,r)=>a+r.points,0));
+const act=id=>D.recs.filter(r=>r.student_id===id&&r.kind==='a').reduce((a,r)=>a+r.points,0);
+const attOf=(sid,d)=>(D.att.find(x=>x.student_id===sid&&x.day===d)||{}).status||'';
+const col=v=>v>=85?'var(--ok)':v>=65?'var(--warn)':'var(--bad)';
+function toast(m){const t=$('#toast');t.textContent=m;t.style.display='block';clearTimeout(toast.h);toast.h=setTimeout(()=>t.style.display='none',2600)}
+function sheet(h){$('#sheet').innerHTML=h;$('#ov').classList.add('show')}
+function closeM(){$('#ov').classList.remove('show')}
+$('#ov').addEventListener('click',e=>{if(e.target.id==='ov')closeM()});
+function ask(msg,fn){ASK=fn;sheet(`<h2>${msg}</h2><div class="row"><button class="btn bad" onclick="closeM();ASK()">تأكيد</button><button class="btn alt" onclick="closeM()">إلغاء</button></div>`)}
+function go(t,cid,sid){V.tab=t;if(cid!==undefined)V.cid=cid;if(sid!==undefined)V.sid=sid;render();scrollTo(0,0)}
+
+async function init(){
+ if(SB_URL.includes('YOUR-')){app.innerHTML=`<div class="card"><h2>الإعداد مطلوب</h2><p>افتح الملف وضع رابط مشروع Supabase والمفتاح العام في أول سطرين من الشيفرة.</p></div>`;$('#nav').innerHTML='';return}
+ db=supabase.createClient(SB_URL,SB_KEY);
+ const{data}=await db.auth.getSession();U=data.session&&data.session.user;
+ U?boot():authView();
+}
+function authView(up){
+ $('#nav').innerHTML='';
+ app.innerHTML=`<div class="card" style="margin-top:24px"><h2>${up?'إنشاء حساب':'تسجيل الدخول'}</h2>
+ <label>البريد الإلكتروني</label><input id="em" type="email" dir="ltr" autocomplete="email">
+ <label>كلمة السر</label><input id="pw" type="password" dir="ltr" autocomplete="${up?'new-password':'current-password'}">
+ <button class="btn" onclick="doAuth(${!!up})">${up?'إنشاء الحساب':'دخول'}</button>
+ <p class="mut">${up?'متاح فقط للبريد الذي أضافه المطوّر.':''}</p>
+ <button class="btn alt sm" onclick="authView(${!up})">${up?'لدي حساب':'حساب جديد'}</button></div>`;
+}
+async function doAuth(up){
+ const email=$('#em').value.trim(),password=$('#pw').value;
+ if(!email||password.length<6)return toast('أدخل البريد وكلمة سر من 6 أحرف على الأقل');
+ const r=up?await db.auth.signUp({email,password}):await db.auth.signInWithPassword({email,password});
+ if(r.error)return toast(up&&/database/i.test(r.error.message)?'هذا البريد غير مسموح له بالتسجيل':'تعذّر الدخول: '+r.error.message);
+ if(!r.data.session)return toast('تحقق من بريدك لتفعيل الحساب ثم سجّل الدخول');
+ U=r.data.user;boot();
+}
+async function load(){
+ const q=t=>db.from(t).select('*').limit(10000);
+ const R=await Promise.all([q('classes'),q('students'),q('attendance'),q('records'),q('plans')]);
+ const er=R.find(x=>x.error);if(er){toast('خطأ في التحميل: '+er.error.message);return false}
+ D.classes=R[0].data;D.students=R[1].data;D.att=R[2].data;D.recs=R[3].data;D.plans=Object.fromEntries(R[4].data.map(p=>[p.day,p]));return true;
+}
+async function boot(){app.innerHTML='<p class="mut" style="text-align:center;margin-top:40px">جارٍ التحميل...</p>';if(await load())render()}
+async function refresh(){if(!U)return;if(await load()){render();toast('تم التحديث')}}
+
+function render(){
+ const t=V.tab,h=t==='class'?classView():t==='student'?studentView():t==='classes'?classesView():t==='acct'?acctView():planView();
+ app.innerHTML=h;
+ const cur=t==='class'||t==='student'?'classes':t;
+ $('#nav').innerHTML=[['plan','الخطة اليومية'],['classes','الشعب'],['acct','حسابي']].map(x=>`<button class="${cur===x[0]?'on':''}" onclick="go('${x[0]}')">${x[1]}</button>`).join('');
+}
+
+function planView(){
+ const p=D.plans[V.date]||{};
+ return `<div class="card"><h2>الخطة اليومية</h2><p class="mut" style="margin-top:-6px">خطة واحدة لكل يوم، تُطبَّق على جميع الشعب.</p>
+ <input type="date" value="${V.date}" onchange="V.date=this.value;render()"><div class="mut">${dn(V.date)}</div>
+ <label>موضوع الدرس</label><input id="p-topic" value="${esc(p.topic)}">
+ <label>الأهداف</label><textarea id="p-goals">${esc(p.goals)}</textarea>
+ <label>الأنشطة</label><textarea id="p-act">${esc(p.activities)}</textarea>
+ <label>الواجب</label><textarea id="p-hw">${esc(p.homework)}</textarea>
+ <button class="btn" onclick="savePlan()">حفظ الخطة</button></div>`;
+}
+async function savePlan(){
+ const row={day:V.date,topic:$('#p-topic').value,goals:$('#p-goals').value,activities:$('#p-act').value,homework:$('#p-hw').value},o=D.plans[V.date];
+ const r=o?await db.from('plans').update(row).eq('id',o.id).select().single():await db.from('plans').insert(row).select().single();
+ if(r.error)return toast(r.error.message);D.plans[V.date]=r.data;toast('حُفظت الخطة');
+}
+
+function classesView(){
+ return `<div class="card"><h2>الشعب</h2>${D.classes.map(c=>`<button class="item" onclick="go('class','${c.id}')"><span>${esc(c.name)}</span><span class="mut">${D.students.filter(s=>s.class_id===c.id).length} طالبًا ›</span></button>`).join('')||'<p class="mut">ابدأ بإضافة شعبة، مثل «السادس أ».</p>'}
+ <div class="row"><input id="ncn" placeholder="اسم الشعبة"><button class="btn" onclick="addClass()">إضافة</button></div></div>`;
+}
+async function addClass(){const name=$('#ncn').value.trim();if(!name)return toast('اكتب اسم الشعبة');const r=await db.from('classes').insert({name}).select().single();if(r.error)return toast(r.error.message);D.classes.push(r.data);render()}
+
+function classView(){
+ const c=cls(V.cid);if(!c)return classesView();
+ const st=D.students.filter(s=>s.class_id===c.id).sort((a,b)=>(a.seat||999)-(b.seat||999));
+ const n={a:0,l:0,e:0};st.forEach(s=>{const v=attOf(s.id,V.date);if(v)n[v]++});
+ const p=D.plans[V.date];
+ return `<button class="btn alt sm np" onclick="go('classes')">› الشعب</button>
+ <div class="card" style="margin-top:10px"><h2>${esc(c.name)}</h2>
+ <input type="date" value="${V.date}" onchange="V.date=this.value;render()"><div class="mut">${dn(V.date)}</div>
+ <p style="margin:6px 0 0"><b>حاضر ${st.length-n.a-n.e}</b> · <span style="color:var(--bad)">غائب ${n.a}</span> · <span style="color:var(--warn)">متأخر ${n.l}</span> · <span style="color:var(--info)">مجاز ${n.e}</span></p></div>
+ ${p&&p.topic?`<div class="card"><b>خطة اليوم:</b> ${esc(p.topic)}${p.homework?`<div class="mut">الواجب: ${esc(p.homework)}</div>`:''}</div>`:''}
+ ${st.map(s=>{const v=attOf(s.id,V.date),b=beh(s.id);return `<div class="srow"><div class="nm" onclick="go('student',null,'${s.id}')"><b>${esc(s.name)}</b><span class="mut">مقعد ${s.seat||'-'}</span><span class="score" style="color:${col(b)}">${b}</span></div><div class="seg">${[['','حاضر'],['a','غائب'],['l','متأخر'],['e','مجاز']].map(k=>`<button class="${v===k[0]?'on k'+(k[0]||'p'):''}" onclick="setAtt('${s.id}','${k[0]}')">${k[1]}</button>`).join('')}</div></div>`}).join('')||'<p class="mut">لا يوجد طلاب بعد.</p>'}
+ <div class="card" style="margin-top:12px"><h3 style="margin-top:0">إضافة طلاب (اسم في كل سطر)</h3><textarea id="bulk" placeholder="الصق القائمة هنا"></textarea><button class="btn" onclick="bulkAdd()">إضافة الطلاب</button> <button class="btn alt" onclick="delClass()">حذف الشعبة</button></div>`;
+}
+async function setAtt(sid,st){
+ const i=D.att.findIndex(x=>x.student_id===sid&&x.day===V.date);
+ if(!st){if(i>=0){const id=D.att[i].id;D.att.splice(i,1);render();const r=await db.from('attendance').delete().eq('id',id);if(r.error)toast(r.error.message)}return}
+ const r=await db.from('attendance').upsert({student_id:sid,day:V.date,status:st},{onConflict:'student_id,day'}).select().single();
+ if(r.error)return toast(r.error.message);
+ if(i>=0)D.att.splice(i,1);D.att.push(r.data);render();
+}
+async function bulkAdd(){
+ const names=$('#bulk').value.split('\n').map(x=>x.trim()).filter(Boolean);if(!names.length)return toast('الصق الأسماء أولًا');
+ let m=Math.max(0,...D.students.filter(s=>s.class_id===V.cid).map(s=>s.seat||0));
+ const r=await db.from('students').insert(names.map(name=>({name,class_id:V.cid,seat:++m}))).select();
+ if(r.error)return toast(r.error.message);D.students.push(...r.data);toast('أُضيف '+names.length+' طالبًا');render();
+}
+function delClass(){ask('حذف الشعبة وكل طلابها وسجلاتهم؟',async()=>{const r=await db.from('classes').delete().eq('id',V.cid);if(r.error)return toast(r.error.message);await load();go('classes',null)})}
+
+function studentView(){
+ const s=stu(V.sid);if(!s)return classesView();
+ const c=cls(s.class_id),b=beh(s.id),a=act(s.id);
+ const at={a:0,l:0,e:0};D.att.filter(x=>x.student_id===s.id).forEach(x=>at[x.status]++);
+ const rs=D.recs.filter(r=>r.student_id===s.id).sort((x,y)=>y.day.localeCompare(x.day)||String(y.created_at).localeCompare(String(x.created_at)));
+ return `<div class="np" style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn alt sm" onclick="go('class','${c.id}')">› ${esc(c.name)}</button><button class="btn sm" onclick="window.print()">طباعة تقرير</button><button class="btn alt sm" onclick="editStu()">تعديل</button></div>
+ <div class="card" style="margin-top:10px"><h2 style="margin:0">${esc(s.name)}</h2><span class="mut">${esc(c.name)} · مقعد ${s.seat||'-'}</span><div class="pr">تاريخ التقرير: ${ymd(new Date())}</div></div>
+ <div class="stats"><div class="stat"><b style="color:${col(b)}">${b}</b><span>السلوك من 100</span></div><div class="stat"><b style="color:var(--ok)">${a}</b><span>نقاط النشاط</span></div><div class="stat"><b>${b+a}</b><span>التقييم العام</span></div></div>
+ <div class="card"><b>الحضور:</b> غياب ${at.a} · تأخر ${at.l} · مجاز ${at.e}</div>
+ <div class="np row" style="margin-bottom:12px"><button class="btn bad" style="flex:1" onclick="openRec('v')">تسجيل مخالفة</button><button class="btn" style="flex:1" onclick="openRec('a')">تسجيل نشاط</button></div>
+ <h3>سجل المخالفات والأنشطة</h3>
+ ${rs.map(r=>`<div class="ev ${r.kind}"><div class="h"><span>${esc(r.title)}</span><span style="color:${r.kind==='v'?'var(--bad)':'var(--ok)'}">${r.kind==='v'?'−':'+'}${r.points}</span></div><div class="mut">${dn(r.day)} ${r.day}</div>${r.note?`<div>${esc(r.note)}</div>`:''}<button class="x np" onclick="delRec('${r.id}')">حذف</button></div>`).join('')||'<p class="mut">لا توجد سجلات بعد.</p>'}
+ <div class="pr" style="text-align:center;margin-top:16px">لا تنسونا من صالح دعائكم</div>`;
+}
+function opts(a){return a.map((x,i)=>`<option value="${i}">${x[0]}${x[1]?' ('+x[1]+')':''}</option>`).join('')}
+function openRec(t){
+ const a=t==='v'?VP:AP,today=ymd(new Date());
+ sheet(`<h2>${t==='v'?'تسجيل مخالفة (تُخصم من السلوك)':'تسجيل نشاط (يرفع التقييم)'}</h2>
+ <label>النوع</label><select id="r-type" onchange="$('#r-pts').value=(${JSON.stringify(a.map(x=>x[1]))})[this.value]">${opts(a)}</select>
+ <label>عدد النقاط</label><input id="r-pts" type="number" min="1" inputmode="numeric" value="${a[0][1]}">
+ <label>التاريخ — <span id="r-day">${dn(today)}</span></label><input id="r-date" type="date" value="${today}" oninput="$('#r-day').textContent=dn(this.value)">
+ <label>الملاحظات والتفاصيل</label><textarea id="r-note"></textarea>
+ <button class="btn ${t==='v'?'bad':''}" onclick="saveRec('${t}')">حفظ</button> <button class="btn alt" onclick="closeM()">إلغاء</button>`);
+}
+async function saveRec(t){
+ const a=t==='v'?VP:AP,title=a[$('#r-type').value][0],points=Math.abs(parseInt($('#r-pts').value)||0),note=$('#r-note').value.trim(),day=$('#r-date').value;
+ if(!points)return toast('أدخل عدد النقاط');if(!day)return toast('اختر التاريخ');
+ if((title==='أخرى'||(t==='v'&&points>=8))&&!note)return toast('التفاصيل إلزامية لهذه الحالة');
+ const r=await db.from('records').insert({student_id:V.sid,kind:t,title,points,day,note}).select().single();
+ if(r.error)return toast(r.error.message);D.recs.push(r.data);closeM();toast(t==='v'?'خُصم '+points+' من السلوك':'أُضيف '+points+' نقطة');render();
+}
+function delRec(id){ask('حذف هذا السجل؟ سيتغير ما يُحسب للطالب.',async()=>{const r=await db.from('records').delete().eq('id',id);if(r.error)return toast(r.error.message);D.recs=D.recs.filter(x=>x.id!==id);render()})}
+function editStu(){
+ const s=stu(V.sid);
+ sheet(`<h2>تعديل الطالب</h2><label>الاسم</label><input id="e-name" value="${esc(s.name)}"><label>رقم المقعد</label><input id="e-seat" type="number" value="${s.seat||''}">
+ <button class="btn" onclick="saveStu()">حفظ</button> <button class="btn alt" onclick="delStu()">حذف الطالب</button>`);
+}
+async function saveStu(){const s=stu(V.sid),name=$('#e-name').value.trim()||s.name,seat=parseInt($('#e-seat').value)||null;const r=await db.from('students').update({name,seat}).eq('id',s.id).select().single();if(r.error)return toast(r.error.message);Object.assign(s,r.data);closeM();render()}
+function delStu(){closeM();ask('حذف الطالب وسجله بالكامل؟',async()=>{const s=stu(V.sid),cid=s.class_id;const r=await db.from('students').delete().eq('id',s.id);if(r.error)return toast(r.error.message);await load();go('class',cid)})}
+
+function acctView(){
+ return `<div class="card"><h2>حسابي</h2><p dir="ltr" style="text-align:right">${esc(U.email)}</p><p class="mut">بياناتك محفوظة سحابيًا، ويمكنك فتح التطبيق من أي جهاز بالبريد وكلمة السر. اضغط «تحديث» أعلى الصفحة لجلب آخر ما سُجّل من جهاز آخر.</p>
+ <button class="btn alt" onclick="logout()">تسجيل الخروج</button></div>`;
+}
+async function logout(){await db.auth.signOut();location.reload()}
+init();
+</script>
+</body>
+</html>
