@@ -95,7 +95,7 @@ $('#ov').onclick=e=>{if(e.target.id==='ov')closeM()};
 function ask(m,fn){ASK=fn;sheet(`<h2>${m}</h2><div class="row"><button class="btn bad" onclick="closeM();ASK()">تأكيد</button><button class="btn alt" onclick="closeM()">إلغاء</button></div>`)}
 function go(t,cid,sid){V.tab=t;if(cid!==undefined)V.cid=cid;if(sid!==undefined)V.sid=sid;SEL.clear();render();scrollTo(0,0)}
 async function init(){
- if(SB_KEY.includes('sb_publishable_rpgeoggDzHaUdK0nl3fJAQ_zO3gABFD')){app.innerHTML='<div class="card"><h2>الإعداد مطلوب</h2><p>ضع المفتاح العام في السطر الثاني من الشيفرة.</p></div>';return}
+ if(SB_KEY.includes('YOUR-')){app.innerHTML='<div class="card"><h2>الإعداد مطلوب</h2><p>ضع المفتاح العام في السطر الثاني من الشيفرة.</p></div>';return}
  db=supabase.createClient(SB_URL,SB_KEY);const{data}=await db.auth.getSession();U=data.session&&data.session.user;U?boot():authView()}
 function authView(up){$('#nav').innerHTML='';$('#bar').innerHTML='';app.innerHTML=`<div class="card" style="margin-top:24px"><h2>${up?'إنشاء حساب':'تسجيل الدخول'}</h2><input id="em" type="email" dir="ltr" placeholder="البريد الإلكتروني"><input id="pw" type="password" dir="ltr" placeholder="كلمة السر"><button class="btn" onclick="doAuth(${!!up})">${up?'إنشاء الحساب':'دخول'}</button> <button class="btn alt sm" onclick="authView(${!up})">${up?'لدي حساب':'حساب جديد'}</button></div>`}
 async function doAuth(up){const email=$('#em').value.trim(),password=$('#pw').value;if(!email||password.length<6)return toast('أدخل البريد وكلمة سر من 6 أحرف');
