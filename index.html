@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl"><head><meta charset="utf-8">
+<html lang="ar" dir="rtl"><head><meta charset="utf-8"><link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#14463b"><link rel="apple-touch-icon" href="icon-192.png"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>سجل المختبر</title>
 <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
@@ -71,8 +71,9 @@ nav button.on{color:var(--g);background:color-mix(in srgb,var(--y) 35%,transpare
 @media(min-width:900px){nav{top:0;bottom:0;left:auto;right:0;inset-inline:auto;width:210px;flex-direction:column;justify-content:flex-start;gap:6px;border-top:0;border-left:1px solid var(--bd);padding:18px 10px}nav button{text-align:right;padding:12px 14px;font-size:16px}nav button.on{background:var(--g);color:#fff}.top,main{margin-right:210px}main{max-width:none}.abar{right:210px;left:0}body{padding-bottom:20px}}
 .mk{display:flex;gap:4px;margin-top:3px;justify-content:center}.mk button{border:1px solid var(--bd);background:var(--bg);color:var(--tx);border-radius:8px;padding:2px 7px;font-size:13px;min-height:26px}.mk .on{background:var(--y);border-color:var(--y);color:#12231f;font-weight:800}.mk .hb.on{background:var(--bad);border-color:var(--bad);color:#fff}.t{min-height:92px}@media print{.tabs,.modes{display:none!important}.tb input{border:0;background:none;width:auto;padding:0}.tb th{background:#eee!important;color:#000!important}}
 .gg{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}.gc{border:3px solid;border-radius:18px;padding:12px}.gc input{background:transparent;border:0;font-weight:800;font-size:19px;margin:0;padding:2px}.gn{flex:0 0 74px;text-align:center;font-size:34px;font-weight:800;line-height:1}.gn small{display:block;font-size:11px;font-weight:500;color:var(--mut)}.sqs{display:flex;flex-wrap:wrap;gap:3px;min-height:26px;margin-top:6px;align-items:center}.sq{display:inline-block;width:22px;height:22px;border-radius:6px}.sq.new{animation:pop .7s ease}@keyframes pop{0%{transform:scale(0);opacity:0}60%{transform:scale(1.6);opacity:1}100%{transform:scale(1)}}.sbtn{border:0;color:#fff;border-radius:10px;padding:6px 16px;font-weight:800;font-size:16px}
+.stt{font-size:12px;opacity:.95;cursor:pointer;white-space:nowrap}
 </style></head><body>
-<div class="top np"><h1 id="tt">سجل المختبر</h1><button onclick="logout()">خروج</button></div>
+<div class="top np"><h1 id="tt">سجل المختبر</h1><span id="st" class="stt" onclick="syncNow()"></span><button onclick="logout()">خروج</button></div>
 <main id="app"></main><nav id="nav" class="np"></nav><div id="bar"></div>
 <div id="ov"><div id="sh"></div></div><div id="toast"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.js"></script>
@@ -96,17 +97,61 @@ function sheet(h){$('#sh').innerHTML=h;$('#ov').classList.add('show')}function c
 $('#ov').onclick=e=>{if(e.target.id==='ov')closeM()};
 function ask(m,fn){ASK=fn;sheet(`<h2>${m}</h2><div class="row"><button class="btn bad" onclick="closeM();ASK()">تأكيد</button><button class="btn alt" onclick="closeM()">إلغاء</button></div>`)}
 function go(t,cid,sid){V.tab=t;if(cid!==undefined)V.cid=cid;if(sid!==undefined)V.sid=sid;SEL.clear();render();scrollTo(0,0)}
+/* ===== العمل دون إنترنت: تخزين محلي + طابور مزامنة ===== */
+const TB=['classes','students','attendance','records','plans','sgrades','semesters','plan_items','timetable','blocks','class_pos','groups','rounds','hwlog','group_pts'],BASE=TB.slice(0,5),HAS_CA=['classes','students','records','group_pts','rounds'],CH={classes:[['students','class_id'],['groups','class_id'],['hwlog','class_id'],['rounds','class_id'],['class_pos','class_id'],['timetable','class_id'],['blocks','class_id']],students:[['attendance','student_id'],['records','student_id'],['sgrades','student_id'],['hwlog','student_id']],groups:[['group_pts','group_id']]};
+let M={},Q=[],FAIL=0,RAW=null,LOCAL_OK=false,PT=null;const SY={busy:false},DIRTY=new Set();TB.forEach(t=>M[t]=[]);
+const uuid=()=>typeof crypto!=='undefined'&&crypto.randomUUID?crypto.randomUUID():'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0;return(c=='x'?r:r&3|8).toString(16)});
+const IDB={db:null,open(){return new Promise((res,rej)=>{const r=indexedDB.open('sijil',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>{this.db=r.result;res()};r.onerror=()=>rej(r.error)})},get(k){return new Promise(res=>{if(!this.db)return res(undefined);const q=this.db.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>res(undefined)})},set(k,v){return new Promise(res=>{if(!this.db)return res();const t=this.db.transaction('kv','readwrite');t.objectStore('kv').put(v,k);t.oncomplete=()=>res();t.onerror=()=>res()})}};
+function mark(t){DIRTY.add(t);clearTimeout(PT);PT=setTimeout(persist,300)}
+function persist(){clearTimeout(PT);for(const t of DIRTY)IDB.set('t:'+t,M[t]);DIRTY.clear();IDB.set('q',Q)}
+const isNet=e=>!!e&&!e.code&&/fetch|network|load failed/i.test(e.message||''),mt=(r,f)=>f.every(([o,k,v])=>o==='eq'?r[k]===v:v.includes(r[k]));
+function del(t,ids){ids=new Set(ids);M[t]=M[t].filter(r=>!ids.has(r.id));mark(t);(CH[t]||[]).forEach(([c,k])=>del(c,M[c].filter(r=>ids.has(r[k])).map(r=>r.id)));if(t==='groups')M.students.forEach(s=>{if(ids.has(s.group_id))s.group_id=null})}
+class QB{constructor(t){this.t=t;this.op='select';this.f=[];this.sel=false;this.one=false;this.o={}}
+ select(){this.sel=true;return this}single(){this.one=true;return this}limit(){return this}
+ insert(r,o){this.op='insert';this.p=r;this.o=o||{};return this}upsert(r,o){this.op='upsert';this.p=r;this.o=o||{};return this}
+ update(p){this.op='update';this.p=p;return this}delete(){this.op='delete';return this}
+ eq(k,v){this.f.push(['eq',k,v]);return this}in(k,v){this.f.push(['in',k,v]);return this}
+ then(a,b){return Promise.resolve().then(()=>runQ(this)).then(a,b)}}
+function runQ(q){const t=q.t,now=new Date().toISOString();let rows=[],en=null;
+ if(q.op==='select')rows=M[t].filter(r=>mt(r,q.f));
+ else if(q.op==='insert'||q.op==='upsert'){const fin=[],keys=q.op==='upsert'&&q.o.onConflict?q.o.onConflict.split(','):null;
+  for(const r0 of (Array.isArray(q.p)?q.p:[q.p])){const ex=keys?M[t].find(r=>keys.every(k=>r[k]===r0[k])):null;
+   if(ex){Object.assign(ex,r0);rows.push(ex);fin.push({...r0,id:r0.id||ex.id})}else{const n={...r0,id:r0.id||uuid(),owner:U.id};if(HAS_CA.includes(t)&&!n.created_at)n.created_at=now;M[t].push(n);rows.push(n);fin.push(n)}}
+  en={t,op:q.op,p:fin,o:q.o}}
+ else if(q.op==='update'){rows=M[t].filter(r=>mt(r,q.f));rows.forEach(r=>Object.assign(r,q.p));en={t,op:'update',p:q.p,f:q.f}}
+ else{rows=M[t].filter(r=>mt(r,q.f));del(t,rows.map(r=>r.id));en={t,op:'delete',f:q.f}}
+ if(en){Q.push(en);mark(t);persist();stat();setTimeout(()=>flush(),0)}
+ return{data:q.sel?(q.one?(rows[0]||null):rows):null,error:null}}
+async function exec(e){let q=RAW.from(e.t);q=e.op==='insert'?q.insert(e.p):e.op==='upsert'?q.upsert(e.p,e.o):e.op==='update'?q.update(e.p):q.delete();(e.f||[]).forEach(([o,k,v])=>{q=o==='eq'?q.eq(k,v):q.in(k,v)});return await q}
+async function flush(){if(SY.busy||!RAW||!navigator.onLine||!Q.length)return 0;SY.busy=true;let n=0;try{while(Q.length){let r;try{r=await exec(Q[0])}catch(x){break}if(r&&r.error){if(isNet(r.error))break;if(!(Q[0].op==='insert'&&r.error.code==='23505'))FAIL++}Q.shift();n++;persist()}}finally{SY.busy=false;stat()}return n}
+async function pull(){const out={};let ok=true,noG=0;
+ await Promise.all(TB.map(async t=>{let all=[];for(let a=0;;a+=1000){let r;try{r=await RAW.from(t).select('*').order('id').range(a,a+999)}catch(x){ok=false;return}
+  if(r.error){if(isNet(r.error)||BASE.includes(t)){ok=false;return}noG=1;all=[];break}all=all.concat(r.data);if(r.data.length<1000)break}out[t]=all}));
+ if(!ok||Q.length)return false;TB.forEach(t=>{M[t]=out[t]||[];mark(t)});D.noG=noG;LOCAL_OK=true;IDB.set('synced',true);persist();return true}
+function fillD(){D.classes=M.classes.slice();D.students=M.students.slice();D.att=M.attendance.slice();D.recs=M.records.slice();D.plans=Object.fromEntries(M.plans.map(p=>[p.day,p]));D.sg=M.sgrades.slice();D.se=Object.fromEntries(M.semesters.map(p=>[p.sem,p]));D.pi=M.plan_items.slice().sort((a,b)=>a.ord-b.ord);D.tt=M.timetable.slice();D.bl=M.blocks.slice();D.cp=Object.fromEntries(M.class_pos.map(p=>[p.class_id,p]));D.gp=M.groups.slice();D.rd=M.rounds.slice();D.hw=M.hwlog.slice();D.gpt=M.group_pts.slice()}
+async function load(){if(RAW&&navigator.onLine){await flush();if(!Q.length)await pull()}fillD();return LOCAL_OK}
+async function bg(full){const n=await flush();if(!n&&!full)return;if(!Q.length&&full&&RAW&&navigator.onLine)await pull();fillD();stat();if(!$('#ov').classList.contains('show')&&!/INPUT|TEXTAREA|SELECT/.test((document.activeElement||{}).tagName||''))render()}
+function stat(){const e=$('#st');if(!e)return;e.innerHTML=(navigator.onLine?'<span style="color:#7dffb0">●</span> متصل':'<span style="color:var(--y)">○</span> بلا إنترنت')+(Q.length?' · ⟳ '+Q.length:'')+(FAIL?' · ⚠ '+FAIL:'')}
+function syncNow(){if(!navigator.onLine)return toast('لا يوجد اتصال، وستُرسل التعديلات تلقائيًا عند عودته');toast('جارٍ المزامنة...');bg(true).then(()=>toast('تمت المزامنة'))}
+function wipe(){TB.forEach(t=>{M[t]=[];DIRTY.add(t)});Q=[];FAIL=0;LOCAL_OK=false;persist();IDB.set('synced',false)}
+function logout(){const go2=async()=>{try{await db.auth.signOut()}catch(e){}try{localStorage.removeItem('who')}catch(e){}wipe();setTimeout(()=>location.reload(),200)};Q.length?ask('توجد '+Q.length+' تعديلات لم تُرسَل بعد. الخروج سيحذفها. هل تتابع؟',go2):go2()}
 async function init(){
  if(SB_KEY.includes('YOUR-')){app.innerHTML='<div class="card"><h2>الإعداد مطلوب</h2><p>ضع المفتاح العام في السطر الثاني من الشيفرة.</p></div>';return}
- db=supabase.createClient(SB_URL,SB_KEY);const{data}=await db.auth.getSession();U=data.session&&data.session.user;U?boot():authView()}
+ try{await IDB.open()}catch(e){IDB.db=null}
+ for(const t of TB)M[t]=(await IDB.get('t:'+t))||[];Q=(await IDB.get('q'))||[];LOCAL_OK=!!(await IDB.get('synced'));
+ try{RAW=supabase.createClient(SB_URL,SB_KEY)}catch(e){RAW=null}
+ db={auth:RAW?RAW.auth:{signOut:async()=>{},signInWithPassword:async()=>({error:{message:'لا يوجد اتصال'}}),signUp:async()=>({error:{message:'لا يوجد اتصال'}})},from:t=>new QB(t)};
+ let user=null,got=false,who=null;if(RAW&&navigator.onLine){try{const{data}=await RAW.auth.getSession();user=data.session&&data.session.user;got=true}catch(e){}}
+ try{who=JSON.parse(localStorage.getItem('who')||'null')}catch(e){}
+ if(user){U={id:user.id,email:user.email};if(who&&who.id!==U.id)wipe();try{localStorage.setItem('who',JSON.stringify(U))}catch(e){}}else if(!got&&who)U=who;
+ U?boot():authView();stat()}
+
 function authView(up){$('#nav').innerHTML='';$('#bar').innerHTML='';app.innerHTML=`<div class="card" style="margin-top:24px"><h2>${up?'إنشاء حساب':'تسجيل الدخول'}</h2><input id="em" type="email" dir="ltr" placeholder="البريد الإلكتروني"><input id="pw" type="password" dir="ltr" placeholder="كلمة السر"><button class="btn" onclick="doAuth(${!!up})">${up?'إنشاء الحساب':'دخول'}</button> <button class="btn alt sm" onclick="authView(${!up})">${up?'لدي حساب':'حساب جديد'}</button></div>`}
 async function doAuth(up){const email=$('#em').value.trim(),password=$('#pw').value;if(!email||password.length<6)return toast('أدخل البريد وكلمة سر من 6 أحرف');
  const r=up?await db.auth.signUp({email,password}):await db.auth.signInWithPassword({email,password});
  if(r.error)return toast(up&&/database/i.test(r.error.message)?'هذا البريد غير مسموح له بالتسجيل':'تعذّر الدخول: '+r.error.message);
- if(!r.data.session)return toast('فعّل حسابك من البريد ثم سجّل الدخول');U=r.data.user;boot()}
-async function load(){const q=t=>db.from(t).select('*').limit(10000),q2=t=>q(t).then(r=>r.error?(D.noG=1,{data:[]}):r),R=await Promise.all([q('classes'),q('students'),q('attendance'),q('records'),q('plans'),q2('sgrades'),q2('semesters'),q2('plan_items'),q2('timetable'),q2('blocks'),q2('class_pos'),q2('groups'),q2('rounds'),q2('hwlog'),q2('group_pts')]),er=R.find(x=>x.error);
- if(er){toast('خطأ: '+er.error.message);return false}D.classes=R[0].data;D.students=R[1].data;D.att=R[2].data;D.recs=R[3].data;D.plans=Object.fromEntries(R[4].data.map(p=>[p.day,p]));D.sg=R[5].data;D.se=Object.fromEntries(R[6].data.map(p=>[p.sem,p]));D.pi=R[7].data.sort((a,b)=>a.ord-b.ord);D.tt=R[8].data;D.bl=R[9].data;D.cp=Object.fromEntries(R[10].data.map(p=>[p.class_id,p]));D.gp=R[11].data;D.rd=R[12].data;D.hw=R[13].data;D.gpt=R[14].data;return true}
-async function boot(){app.innerHTML='<p class="mut" style="text-align:center;margin-top:40px">جارٍ التحميل...</p>';if(await load())render()}
+ if(!r.data.session)return toast('فعّل حسابك من البريد ثم سجّل الدخول');U=r.data.user;try{const w=JSON.parse(localStorage.getItem('who')||'null');if(w&&w.id!==U.id)wipe();localStorage.setItem('who',JSON.stringify({id:U.id,email:U.email}))}catch(e){}boot()}
+async function boot(){app.innerHTML='<p class="mut" style="text-align:center;margin-top:40px">جارٍ التحميل...</p>';if(await load())render();else app.innerHTML='<div class="card"><h2>لا توجد بيانات على هذا الجهاز بعد</h2><p>اتصل بالإنترنت لأول مرة ثم أعد فتح التطبيق.</p></div>'}
 async function refresh(){if(U&&await load()){render();toast('تم التحديث')}}
 function render(){const t=V.tab;let h,ti='لوحة التحكم';
  if(t==='class'){h=classView();ti=(cls(V.cid)||{}).name||''}else if(t==='student'){h=stuView();ti=(stu(V.sid)||{}).name||''}else if(t==='nb'){h=nbView();ti='الخطة اليومية'}else if(t==='acct'){h=acctView();ti='حسابي'}else if(t==='students'){h=stView();ti='الطلاب'}else if(t==='gr'){h=grView();ti='الدرجات'}else if(t==='groups'){h=gpView();ti='المجموعات'}else h=homeView();
@@ -246,7 +291,7 @@ async function impFiles(){const fl=[...$('#fi').files];if(!fl.length)return toas
 /* ===== المجموعات والبيانات الشخصية ===== */
 async function mkGroups(redo){const st=stList(),n=st.length;if(n<2)return toast('أضف طلابًا أولًا');const k=Math.max(1,Math.round(n/5));
  if(redo){const r0=await db.from('groups').delete().eq('class_id',V.cid);if(r0.error)return toast(r0.error.message)}
- const r=await db.from('groups').insert(Array.from({length:k},(_,i)=>({class_id:V.cid,name:'المجموعة '+(i+1),round_start:TD()}))).select();if(r.error)return toast(r.error.message);
+ const r=await db.from('groups').insert(Array.from({length:k},(_,i)=>({class_id:V.cid,name:'المجموعة '+(i+1),round_start:TD(),round_ts:new Date().toISOString()}))).select();if(r.error)return toast(r.error.message);
  const u=await db.from('students').upsert(st.slice().sort(()=>Math.random()-.5).map((s,i)=>({id:s.id,class_id:s.class_id,name:s.name,group_id:r.data[i%k].id})),{onConflict:'id'});if(u.error)return toast(u.error.message);await load();render()}
 async function renG(id,name){const r=await db.from('groups').update({name}).eq('id',id);if(r.error)return toast(r.error.message);const g=D.gp.find(x=>x.id===id);if(g)g.name=name}
 async function endRound(){const rs=gp_rank(V.cid,stList());if(!rs.length)return;const res=rs.map(x=>({name:x.g.name,pts:x.pts,avg:r1(x.avg),members:x.m.map(s=>s.name)})),from=rs[0].g.round_start||TD();
@@ -256,7 +301,7 @@ async function endRound(){const rs=gp_rank(V.cid,stList());if(!rs.length)return;
 function profCard(s){const f=(l,v,np)=>v?`<div class="${np?'np':''}"><span class="mut">${l}:</span> ${esc(v)}</div>`:'';return `<div class="card"><div class="row"><b style="flex:1">البيانات الشخصية</b><button class="btn alt sm np" onclick="editProf()">تعديل</button></div>${f('تاريخ الميلاد',s.dob)}${f('ولي الأمر',s.guardian)}${f('هاتف ولي الأمر',s.phone)}${f('حالة الأب',s.father_status,1)}${f('حالة الأم',s.mother_status,1)}${f('الطول (سم)',s.height,1)}${f('الوزن (كغ)',s.weight,1)}${f('ملاحظات عامة',s.notes)}</div>`}
 function editProf(){const s=stu(V.sid),i=(id,l,v,t)=>`<label class="mut">${l}</label><input id="${id}" ${t||''} value="${esc(v)}">`;sheet(`<h2>البيانات الشخصية</h2>${i('f-dob','تاريخ الميلاد',s.dob,'type="date"')}${i('f-gd','ولي الأمر',s.guardian)}${i('f-ph','هاتف ولي الأمر',s.phone)}${i('f-fa','حالة الأب',s.father_status)}${i('f-mo','حالة الأم',s.mother_status)}${i('f-ht','الطول (سم)',s.height,'type="number" step="0.1"')}${i('f-wt','الوزن (كغ)',s.weight,'type="number" step="0.1"')}<label class="mut">ملاحظات عامة</label><textarea id="f-nt">${esc(s.notes)}</textarea><button class="btn" onclick="saveProf()">حفظ</button>`)}
 async function saveProf(){const s=stu(V.sid),v=id=>$(id).value.trim()||null,n=id=>{const x=parseFloat($(id).value);return isNaN(x)?null:x},p={dob:v('#f-dob'),guardian:v('#f-gd'),phone:v('#f-ph'),father_status:v('#f-fa'),mother_status:v('#f-mo'),height:n('#f-ht'),weight:n('#f-wt'),notes:v('#f-nt')};const r=await db.from('students').update(p).eq('id',s.id).select().single();if(r.error)return toast(r.error.message);Object.assign(s,r.data);closeM();render()}
-const SCHOOL='مدرسة تبارك الابتدائية للبنين',TEACHER='الأستاذ مرتضى رعد يوسف',logout=()=>db.auth.signOut().then(()=>location.reload());
+const SCHOOL='مدرسة تبارك الابتدائية للبنين',TEACHER='الأستاذ مرتضى رعد يوسف';
 const DIS=()=>{try{return JSON.parse(localStorage.getItem('dis')||'[]')}catch(e){return[]}},dis=id=>{try{localStorage.setItem('dis',JSON.stringify([...DIS(),id]))}catch(e){}render()};
 const hwAuto=(id,p,ok)=>{if(!ok)return null;const c=(stu(id)||{}).class_id,days=D.hw.filter(h=>h.class_id===c&&!h.student_id&&inR(h.day,p)).length,ms=D.hw.filter(h=>h.student_id===id&&inR(h.day,p)).length;return days?r1(15*(days-ms)/days):null};
 const getN=(id,s)=>{const g=D.sg.find(x=>x.student_id===id&&x.sem===s&&x.comp==='note');return g&&g.note||''};
@@ -291,6 +336,7 @@ function memSheet(gid){const g=D.gp.find(x=>x.id===gid),st=stList(),m=st.filter(
  sheet(`<h2>${esc(g.name)}</h2><h3>الأعضاء (${m.length})</h3>${m.map(s=>`<div class="row" style="margin-bottom:6px"><span style="flex:1">${esc(s.name)}</span><select onchange="mvStu('${s.id}',this.value)" style="width:140px"><option value="">نقل إلى…</option>${D.gp.filter(x=>x.class_id===V.cid&&x.id!==gid).map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join('')}<option value="-">بلا مجموعة</option></select></div>`).join('')||'<p class="mut">لا أعضاء.</p>'}<h3>إضافة طالب إلى هذه المجموعة</h3><select onchange="if(this.value)mvStu(this.value,'${gid}')"><option value="">اختر طالبًا…</option>${o.map(s=>`<option value="${s.id}">${esc(s.name)}${s.group_id?' ('+esc(gn(s.group_id))+')':''}</option>`).join('')}</select>`)}
 async function mvStu(sid,to){if(!sid||!to)return;const r=await db.from('students').update({group_id:to==='-'?null:to}).eq('id',sid).select().single();if(r.error)return toast(r.error.message);Object.assign(stu(sid),r.data);closeM();render()}
 function acctView(){return `<div class="card"><h2>حسابي</h2><p dir="ltr" style="text-align:right">${esc(U.email)}</p><p class="mut">بياناتك محفوظة سحابيًا وتفتح من أي جهاز. زر «تحديث» يجلب آخر ما سُجّل من جهاز آخر.</p><button class="btn alt" onclick="db.auth.signOut().then(()=>location.reload())">تسجيل الخروج</button></div>`}
-document.addEventListener('visibilitychange',()=>{if(!document.hidden&&U&&!$('#ov').classList.contains('show')&&!/INPUT|TEXTAREA|SELECT/.test((document.activeElement||{}).tagName||''))load().then(ok=>ok&&render())});
+document.addEventListener('visibilitychange',()=>{if(document.hidden)persist();else if(U)bg(true)});addEventListener('online',()=>{stat();if(U)bg(true)});addEventListener('offline',stat);addEventListener('pagehide',persist);setInterval(()=>{if(Q.length&&U)bg(false)},15000);
+if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 init();
 </script></body></html>
